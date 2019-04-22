@@ -1,0 +1,171 @@
+#include<stdio.h>
+#include<stdbool.h>
+#include<stdlib.h>
+#include<stdio.h>
+#include <malloc.h>
+ 
+#define NVERTICES 12
+
+//criar lista de adjacencias
+typedef struct estrutura{
+	int indice;
+	struct estrutura *prox;
+}NO;
+ 
+typedef struct{
+	NO* coluna[NVERTICES];
+	int descobertas[NVERTICES]; //0 = branco, 1 = cinza, 2 = preto PARA O DFST
+	int minor[NVERTICES];
+	int ordem[NVERTICES];
+	int pai[NVERTICES];
+	int ord;
+}GRAFO;
+ 
+void inicializar(GRAFO* g){
+	//inicializar a coluna
+	for(int i = 0; i < 12; i++){
+		g->coluna[i] = NULL;
+	}
+}
+//adiciona adjacentes as arestas
+void adicionarArestas(GRAFO* g, int indicepai, int indicefilho){
+	NO* primeiro = g->coluna[indicepai];
+	while(primeiro && primeiro->prox) primeiro = primeiro->prox;
+	NO* novo = (NO*)malloc(sizeof(NO));
+	novo->indice = indicefilho;
+	novo->prox = NULL;
+	if(primeiro) {
+		primeiro->prox = novo;
+	}
+	else {
+		g->coluna[indicepai] = novo;
+	}
+}
+void imprimir(GRAFO* g){
+	for(int i = 0; i < NVERTICES;i++){
+		NO* aux = g->coluna[i];
+		printf("%i - ", i);
+		while(aux){
+			printf("%i,", aux->indice);
+			aux = aux->prox;
+		}
+		printf("\n");
+
+	}
+}
+ 
+void DFS1(GRAFO* g, int v){
+	NO* temp = g->coluna[v];
+	while(temp){
+		if(g->descobertas[temp->indice] == 0){
+			g->descobertas[temp->indice] = 1;
+			g->ord++;
+			g->ordem[temp->indice] = g->ord;
+			g->minor[temp->indice] = g->ord;
+			g->pai[temp->indice] = v;
+			DFS1(g,temp->indice);
+		}
+		temp = temp->prox;
+	}
+}
+ 
+void DFS2(GRAFO* g, int temp){
+	NO* aux = g->coluna[temp];
+	while(aux){
+		if(g->pai[aux->indice] == temp)	DFS2(g,aux->indice);
+		aux = aux->prox;
+	}
+	aux = g->coluna[temp];
+	while(aux){
+		if((aux->indice != g->pai[temp]) && (g->minor[aux->indice] < g->minor[temp])) {
+			g->minor[temp] = g->minor[aux->indice];
+		}
+		aux = aux->prox;
+	}
+}
+
+bool DFST(GRAFO* g){
+	for (int i = 0; i < NVERTICES; i++){
+		g->minor[i] = 0;
+		g->ordem[i] = 0;
+		g->pai[i]= 0;
+	}
+	for(int i = 0; i < NVERTICES; i++){
+		NO* aux = g->coluna[i];
+		while(aux){
+			g->descobertas[i] = 0;
+			aux = aux->prox;
+		}
+	}
+	g->ord = 0;
+	bool biconexo = false;
+	//inicialização das variaveis acima
+	
+	g->descobertas[0] = 1;
+	g->ord++;
+	g->ordem[0] = g->ord;
+	g->minor[0] = g->ord;
+	DFS1(g,0);
+	
+	if(g->ord == NVERTICES){
+		for(int i =0; i < NVERTICES; i++) g->minor[0] = g->ordem[0];
+		DFS2(g,0);
+	    }
+	else return biconexo;
+	for(int i =0; i<NVERTICES;i++){
+		if(i != 0 && g->minor[i] == g->ordem[i]){
+			printf("A aresta %i,%i eh critico\n",g->pai[i],i );
+			return biconexo;
+		}
+	}
+	biconexo = true;
+	return biconexo;
+}
+ 
+void resposta(GRAFO* g){
+	bool resp = DFST(g);
+	if(resp) printf("Eh biconexo\n");
+	else printf("Nao eh biconexo\n");
+	//minor 
+	for(int i= 0; i<NVERTICES;i++){
+		printf("O vertice %i tem minor %i e ordem %i\n",i, g->minor[i],g->ordem[i]);
+	}
+}
+ 
+int main(){
+GRAFO *g = (GRAFO*) malloc(sizeof(GRAFO));
+inicializar(g);
+	adicionarArestas(g,0,1);
+   adicionarArestas(g,0,2);
+   adicionarArestas(g,1,0);
+   adicionarArestas(g,1,3);
+   adicionarArestas(g,1,4);
+   adicionarArestas(g,2,0);
+   adicionarArestas(g,2,4);
+   adicionarArestas(g,3,1);
+   adicionarArestas(g,3,5);
+   adicionarArestas(g,3,6);
+   adicionarArestas(g,4,1);
+   adicionarArestas(g,4,2);
+   adicionarArestas(g,4,5);
+   adicionarArestas(g,5,3);
+   adicionarArestas(g,5,4);
+   adicionarArestas(g,6,3);
+   adicionarArestas(g,6,7);
+   adicionarArestas(g,6,8);
+   adicionarArestas(g,6,11);
+   adicionarArestas(g,7,6);
+   adicionarArestas(g,7,8);
+   adicionarArestas(g,8,6);
+   adicionarArestas(g,8,9);
+   adicionarArestas(g,9,8);
+   adicionarArestas(g,9,10);
+   adicionarArestas(g,9,11);
+   adicionarArestas(g,10,8);
+   adicionarArestas(g,10,9);
+   adicionarArestas(g,11,6);
+   adicionarArestas(g,11,9);
+//imprimir(g);
+
+	resposta(g);
+}
